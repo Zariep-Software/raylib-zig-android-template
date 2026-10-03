@@ -1,0 +1,10 @@
+.{
+	.fingerprint = 0xd252669387380beb,
+	.name = .raylib_zig_android,
+	.version = "0.1.0",
+	.minimum_zig_version = "0.16.0",
+	.paths = .{
+		"build-android.zig",
+		"vendor/raylib-zig-android",
+	},
+}

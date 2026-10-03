@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+abi="$1" triple="$2" api="$3" sysroot="$4" outdir="$5"
+
+# aprebuild.sh runs before dub build
+# can inject flags via EXTRA_CFLAGS/EXTRA_LDFLAGS/EXTRA_DFLAGS:
+
+# Useful for:
+#	- Compiling extra C/C++/asm sources that need to be linked into the .so
+#	- Generating code or config files the D build depends on
+#	- Downloading/unpacking a dependency that isn't vendored
+
+
+echo "== Compiling android_keyboard.c ==" >&2
+"$NDK_CLANG" \
+	--target="${triple}${api}" \
+	--sysroot="${sysroot}" \
+	-I"${ANDROID_NDK_HOME}/sources/android/native_app_glue" \
+	-c source/android_keyboard.c \
+	-o "${outdir}/android_keyboard.o"
+
+echo "EXTRA_DFLAGS=-L${outdir}/android_keyboard.o -Xcc=-Wl,--wrap=fopen"

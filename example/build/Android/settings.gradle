@@ -1,0 +1,2 @@
+rootProject.name = "raylib-zig-android"
+include ":app"

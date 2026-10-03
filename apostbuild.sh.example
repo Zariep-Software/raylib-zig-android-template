@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+
+# apostbuild.sh runs after strip, gets the final .so path.
+
+# Useful for:
+# 	- Copying extra runtime assets next to the built lib
+# 	- Checksumming or signing the artifact for release builds
+# 	- Kicking off the next step automatically (gradlew assembleDebug) instead of just printing the reminder
+# 	- Uploading debug symbols somewhere before they're stripped away for good
+# 	- Any project specific packaging quirk
+
+# args from build-android.zig: runHook("apostbuild.sh", [destLib], ...)
+lib_path="$1"          # full path to the stripped libmain.so
+# env vars also available: OUT_DIR, ABI
+
+echo "== Post-processing ${lib_path} ==" >&2
+
+# 1. Copy any extra runtime assets your app needs next to the .so
+if [ -d "assets/android-extra" ]; then
+	cp -r assets/android-extra/* "${OUT_DIR}/"
+	echo "Copied extra assets into ${OUT_DIR}" >&2
+fi
+
+# 2. Drop a checksum file for CI / release verification
+sha256sum "${lib_path}" > "${lib_path}.sha256"
+echo "Wrote checksum: ${lib_path}.sha256" >&2
+
+# 3. Optional: sign it if this is a release build
+if [ "${BUILD_TYPE:-debug}" = "release" ] && [ -n "${SIGNING_KEY:-}" ]; then
+	echo "== Signing ${lib_path} ==" >&2
+	apksigner_or_your_tool sign --key "${SIGNING_KEY}" "${lib_path}"
+fi
+
+# 4. Report final size, useful sanity check after stripping
+size=$(stat -c%s "${lib_path}" 2>/dev/null || stat -f%z "${lib_path}")
+echo "Final lib size: ${size} bytes" >&2
+
+# no EXTRA_* lines needed here since the build already finished
+# post-build hooks are for side effects, not flag injection

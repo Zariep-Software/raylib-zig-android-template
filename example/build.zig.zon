@@ -1,0 +1,17 @@
+.{
+	.fingerprint = 0xe30c18d805920f70,
+	.name = .my_game,
+	.version = "0.1.0",
+	.minimum_zig_version = "0.16.0",
+	.dependencies = .{
+		.raylib_zig = .{
+			.url = "git+https://github.com/raylib-zig/raylib-zig#devel",
+			.hash = "raylib_zig-6.0.0-KE8RECZ8BQDm-txuospkpZHbJ6DNpacUF7D88RWQ_qAe",
+		},
+	},
+	.paths = .{
+		"build.zig",
+		"build.zig.zon",
+		"src",
+	},
+}

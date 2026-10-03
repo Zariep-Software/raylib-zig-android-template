@@ -1,0 +1,9 @@
+.{
+	.fingerprint = 0x8a3f2c1d9e4b7a50,
+	.name = .raylib_zig_android_glue,
+	.version = "0.1.0",
+	.minimum_zig_version = "0.16.0",
+	.paths = .{
+		"android-glue.zig",
+	},
+}
