@@ -326,7 +326,7 @@ pub fn add(b: *Build, android_step: *Build.Step, opts: Options) !void {
 	const raylib_a = b.pathJoin(&.{ raylib_dir, cfg.abi, "libraylib.a" });
 	cwd.access(io, raylib_a, .{}) catch fatal("raylib not found: {s}", .{raylib_a});
 
-	const android_output_dir = b.pathFromRoot(envOr(&env.all, "ANDROID_OUTPUT_DIR", "android/app/src/main"));
+	const android_output_dir = try b.root.joinString(a, envOr(&env.all, "ANDROID_OUTPUT_DIR", "android/app/src/main"),);
 	const out_dir = b.pathJoin(&.{ android_output_dir, "jniLibs", cfg.abi });
 	try cwd.createDirPath(io, out_dir);
 	const dest_lib = b.pathJoin(&.{ out_dir, "libmain.so" });
@@ -402,9 +402,10 @@ pub fn add(b: *Build, android_step: *Build.Step, opts: Options) !void {
 		\\crt_dir={s}
 		\\msvc_lib_dir=
 		\\kernel32_lib_dir=
-		\\gcc_dir=
+		\\cc_dir={s}
+		\\darwin_sdk_dir=
 		\\
-	, .{ sysroot, sysroot, cfg.sysroot_lib_triple, sysroot_api_lib });
+	, .{ sysroot, sysroot, cfg.sysroot_lib_triple, sysroot_api_lib, sysroot_api_lib });
 	var write_files = b.addWriteFiles();
 	const libc_file = write_files.add("android-libc.txt", libc_txt);
 
@@ -426,7 +427,7 @@ pub fn add(b: *Build, android_step: *Build.Step, opts: Options) !void {
 
 	// -Wl,-u,ANativeActivity_onCreate  (pulls it out of the raylib archive)
 	if (@hasField(Build.Step.Compile, "force_undefined_symbols")) {
-		lib.force_undefined_symbols.put("ANativeActivity_onCreate", {}) catch @panic("OOM");
+		lib.force_undefined_symbols.put(a, "ANativeActivity_onCreate", {}) catch @panic("OOM");
 	} else if (@hasDecl(Build.Step.Compile, "forceUndefinedSymbol")) {
 		lib.forceUndefinedSymbol("ANativeActivity_onCreate");
 	} else {
@@ -438,7 +439,9 @@ pub fn add(b: *Build, android_step: *Build.Step, opts: Options) !void {
 	const copy = b.addUpdateSourceFiles();
 	copy.addCopyFileToSource(lib.getEmittedBin(), dest_lib);
 	android_step.dependOn(&copy.step);
-	std.debug.print("DONE: \"\x1b[32m{s}\x1b[0m\"\n", .{dest_lib});
+	const done = b.addSystemCommand(&.{ "printf", "DONE: \"\x1b[32m%s\x1b[0m\"\n", dest_lib });
+	done.step.dependOn(&copy.step);
+	android_step.dependOn(&done.step);
 
 	// post-build
 	if (hookState(io, "apostbuild.sh") == .ok) {
